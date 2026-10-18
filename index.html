@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hải Đường Học Vui</title>
+<style>
+  :root { --bg:#fff4f8; --pink:#ff6fa5; --dark:#7a2250; --ok:#3cb371; --bad:#e5533d; --card:#fff; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Comic Sans MS","Segoe UI",system-ui,sans-serif; background:var(--bg); color:var(--dark); }
+  header { background:var(--pink); color:#fff; padding:14px 16px; display:flex; justify-content:space-between; align-items:center; }
+  header h1 { margin:0; font-size:1.3rem; }
+  #stars { font-size:1.2rem; background:#fff3; padding:4px 12px; border-radius:20px; }
+  main { max-width:560px; margin:0 auto; padding:16px; }
+  .menu { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .menu button { padding:22px 8px; font-size:1.1rem; border:0; border-radius:18px; background:var(--card); box-shadow:0 3px 8px #0002; cursor:pointer; color:var(--dark); }
+  .menu button span { display:block; font-size:2.4rem; }
+  .card { background:var(--card); border-radius:18px; padding:20px; box-shadow:0 3px 8px #0002; text-align:center; }
+  .q { font-size:2.2rem; margin:12px 0; min-height:2.6rem; }
+  .opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .opts button { padding:16px 8px; font-size:1.3rem; border:3px solid var(--pink); border-radius:14px; background:#fff; color:var(--dark); cursor:pointer; }
+  .opts button.ok { background:var(--ok); border-color:var(--ok); color:#fff; }
+  .opts button.bad { background:var(--bad); border-color:var(--bad); color:#fff; }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .back { border:0; background:none; font-size:1rem; color:var(--dark); cursor:pointer; }
+  .levels { display:flex; gap:8px; justify-content:center; margin-bottom:8px; }
+  .levels button { padding:6px 14px; border-radius:16px; border:2px solid var(--pink); background:#fff; color:var(--dark); cursor:pointer; }
+  .levels button.on { background:var(--pink); color:#fff; }
+  #msg { min-height:1.6rem; font-size:1.2rem; margin-top:12px; }
+  .hint { opacity:.7; font-size:.9rem; }
+</style>
+</head>
+<body>
+<header><h1>🌸 Hải Đường Học Vui</h1><div id="stars">⭐ 0</div></header>
+<main id="app"></main>
+
+<script>
+const $ = s => document.querySelector(s);
+const rnd = n => Math.floor(Math.random()*n);
+const pick = a => a[rnd(a.length)];
+const shuffle = a => a.map(v=>[Math.random(),v]).sort((x,y)=>x[0]-y[0]).map(x=>x[1]);
+
+let stars = 0;
+try { stars = +localStorage.getItem('hd_stars') || 0; } catch(e) {}
+function addStar() {
+  stars++;
+  try { localStorage.setItem('hd_stars', stars); } catch(e) {}
+  showStars();
+}
+function showStars() { $('#stars').textContent = '⭐ ' + stars; }
+
+function speak(text, lang) {
+  if (!('speechSynthesis' in window)) return;
+  const u = new SpeechSynthesisUtterance(text);
+  u.lang = lang; u.rate = 0.85;
+  speechSynthesis.cancel(); speechSynthesis.speak(u);
+}
+
+// ---------- Dữ liệu ----------
+const ENGLISH = [
+  ['🐶','dog','con chó'],['🐱','cat','con mèo'],['🐟','fish','con cá'],['🐦','bird','con chim'],
+  ['🍎','apple','quả táo'],['🍌','banana','quả chuối'],['🥛','milk','sữa'],['🍚','rice','cơm'],
+  ['📖','book','quyển sách'],['✏️','pencil','bút chì'],['🏠','house','ngôi nhà'],['🚗','car','xe hơi'],
+  ['☀️','sun','mặt trời'],['🌙','moon','mặt trăng'],['🌸','flower','bông hoa'],['🌳','tree','cái cây'],
+  ['👧','girl','bé gái'],['👦','boy','bé trai'],['🧑‍🏫','teacher','giáo viên'],['🏫','school','trường học'],
+  ['🔴','red','màu đỏ'],['🔵','blue','màu xanh dương'],['🟢','green','màu xanh lá'],['🟡','yellow','màu vàng'],
+  ['👁️','eye','mắt'],['👂','ear','tai'],['👃','nose','mũi'],['👄','mouth','miệng'],
+];
+
+// Chọn từ viết đúng chính tả (tr/ch, s/x, d/gi, l/n...)
+const SPELL = [
+  ['trường học','chường học'],['chăm chỉ','trăm trỉ'],['con trâu','con châu'],['cây xanh','cây sanh'],
+  ['xinh đẹp','sinh đẹp'],['sáng sủa','xáng xủa'],['giúp đỡ','dúp đỡ'],['dòng sông','giòng sông'],
+  ['con nai','con lai'],['nắng ấm','lắng ấm'],['lá cây','ná cây'],['nhà cửa','nhà cữa'],
+  ['quả chuối','quả chuỗi'],['chiếc bút','chiếc bứt'],['học sinh','học xinh'],
+].filter(p => p[0] !== p[1]);
+
+// ---------- Màn hình ----------
+function home() {
+  $('#app').innerHTML = `
+    <div class="menu">
+      <button onclick="math()"><span>➕</span>Toán</button>
+      <button onclick="english()"><span>🔤</span>Tiếng Anh</button>
+      <button onclick="viet()"><span>📝</span>Chính tả</button>
+      <button onclick="ai()"><span>🤖</span>Học về AI</button>
+      <button onclick="tables()"><span>✖️</span>Bảng cửu chương</button>
+    </div>
+    <p class="hint" style="text-align:center">Trả lời đúng được 1 ⭐</p>`;
+}
+
+function frame(title, body) {
+  $('#app').innerHTML = `
+    <div class="row"><button class="back" onclick="home()">⬅ Quay lại</button><b>${title}</b><span></span></div>
+    <div class="card">${body}</div>`;
+}
+
+function answerUI(options, correct, onNext) {
+  const box = $('#opts');
+  box.innerHTML = '';
+  options.forEach(o => {
+    const b = document.createElement('button');
+    b.textContent = o;
+    b.onclick = () => {
+      if (box.dataset.done) return;
+      if (String(o) === String(correct)) {
+        box.dataset.done = 1; b.classList.add('ok'); addStar();
+        $('#msg').textContent = pick(['Giỏi quá! 🎉','Đúng rồi! 🌟','Tuyệt vời! 👏']);
+        setTimeout(onNext, 900);
+      } else {
+        b.classList.add('bad'); $('#msg').textContent = 'Thử lại nhé 💪';
+      }
+    };
+    box.appendChild(b);
+  });
+}
+
+// Toán
+let mathLevel = 1;
+function math() {
+  frame('Toán', `
+    <div class="levels">${[1,2,3].map(l=>`<button class="${l==mathLevel?'on':''}" onclick="mathLevel=${l};math()">Mức ${l}</button>`).join('')}</div>
+    <div class="q" id="q"></div><div class="opts" id="opts"></div><div id="msg"></div>`);
+  const max = [0,10,50,100][mathLevel];
+  let a = rnd(max)+1, b = rnd(max)+1;
+  const op = pick(mathLevel === 1 ? ['+','-'] : ['+','-','×']);
+  let ans;
+  if (op === '+') ans = a + b;
+  else if (op === '-') { if (b > a) [a,b] = [b,a]; ans = a - b; }
+  else { a = rnd(9)+2; b = rnd(9)+2; ans = a * b; }
+  $('#q').textContent = `${a} ${op} ${b} = ?`;
+  const set = new Set([ans]);
+  while (set.size < 4) set.add(Math.max(0, ans + rnd(11) - 5));
+  answerUI(shuffle([...set]), ans, math);
+}
+
+// Bảng cửu chương
+function tables() {
+  frame('Bảng cửu chương', `<div class="q" id="q"></div><div class="opts" id="opts"></div><div id="msg"></div>`);
+  const a = rnd(8)+2, b = rnd(9)+1, ans = a*b;
+  $('#q').textContent = `${a} × ${b} = ?`;
+  const set = new Set([ans]);
+  while (set.size < 4) set.add(a * (rnd(10)+1));
+  answerUI(shuffle([...set]), ans, tables);
+}
+
+// Tiếng Anh
+function english() {
+  const [emoji, word, vi] = pick(ENGLISH);
+  frame('Tiếng Anh', `
+    <div class="q" style="font-size:4rem">${emoji}</div>
+    <div><button class="back" onclick="speak('${word}','en-US')">🔊 Nghe</button></div>
+    <p>Từ tiếng Anh của hình này là gì?</p>
+    <div class="opts" id="opts"></div><div id="msg"></div>`);
+  const others = shuffle(ENGLISH.filter(e => e[1] !== word)).slice(0,3).map(e => e[1]);
+  speak(word, 'en-US');
+  answerUI(shuffle([word, ...others]), word, () => {
+    $('#msg').textContent = `${word} = ${vi}`;
+    setTimeout(english, 1300);
+  });
+}
+
+// Chính tả
+function viet() {
+  const [right, wrong] = pick(SPELL);
+  frame('Chính tả', `
+    <p>Chọn từ viết <b>đúng</b>:</p>
+    <div class="opts" id="opts"></div><div id="msg"></div>`);
+  answerUI(shuffle([right, wrong]), right, viet);
+}
+
+// AI cho trẻ em: [câu hỏi, đáp án đúng, [đáp án sai], giải thích]
+const AI = [
+  ['AI là viết tắt của gì?','Trí tuệ nhân tạo',['Máy tính mini','Âm thanh lớn','Ảnh đẹp'],'AI = Artificial Intelligence, tức là trí tuệ nhân tạo: máy tính biết học và làm việc giống con người.'],
+  ['AI học bằng cách nào?','Xem thật nhiều ví dụ',['Đi học ở trường','Ngủ nhiều','Ăn cơm'],'AI học từ rất nhiều dữ liệu (ảnh, chữ, âm thanh) rồi tìm ra quy luật.'],
+  ['Trợ lý ảo như Siri, Google Assistant hiểu em nhờ gì?','AI nghe và hiểu giọng nói',['Có người ngồi trong điện thoại','Ma thuật','Quạt gió'],'AI chuyển giọng nói thành chữ rồi hiểu ý em muốn gì.'],
+  ['AI có thể mắc lỗi không?','Có, nên em cần kiểm tra lại',['Không bao giờ sai','Chỉ sai vào ban đêm','Chỉ sai khi trời mưa'],'AI đôi khi trả lời sai. Em nên hỏi cô giáo, bố mẹ hoặc tra sách để chắc chắn.'],
+  ['Khi dùng AI, em có nên gửi tên, địa chỉ, số điện thoại không?','Không, giữ bí mật',['Có, gửi hết','Chỉ gửi ban đêm','Gửi cho vui'],'Thông tin riêng tư phải giữ kín. Luôn hỏi bố mẹ trước khi dùng AI.'],
+  ['AI giúp em việc gì tốt nhất khi học bài?','Giải thích bài khó, gợi ý cách làm',['Làm hộ toàn bộ bài tập','Chơi thay em','Ăn kẹo hộ em'],'Em tự suy nghĩ trước, rồi nhờ AI giải thích để hiểu bài, không chép nguyên.'],
+  ['Máy tính nhận ra con mèo trong ảnh nhờ gì?','AI đã xem rất nhiều ảnh mèo',['Máy ngửi được mùi mèo','Máy nghe tiếng meo','Máy đoán bừa'],'Đây gọi là nhận diện hình ảnh: AI học từ hàng triệu ảnh mèo.'],
+  ['Robot và AI khác nhau thế nào?','Robot là thân máy, AI là bộ não',['Giống hệt nhau','AI là đồ chơi','Robot luôn biết nói'],'Robot có thể có AI làm bộ não, nhưng AI cũng có thể chỉ là phần mềm trong điện thoại.'],
+  ['Ai là người tạo ra AI?','Con người lập trình và dạy',['AI tự mọc lên','Người ngoài hành tinh','Các loài chim'],'Các kỹ sư tạo ra và dạy AI. Em lớn lên cũng có thể làm được!'],
+  ['Em nên dùng AI như thế nào?','Làm bạn học cùng, vẫn tự suy nghĩ',['Để AI nghĩ thay hết','Tin mọi điều AI nói','Không bao giờ hỏi người lớn'],'AI là công cụ hỗ trợ. Bộ não của em vẫn là quan trọng nhất!'],
+];
+let aiOrder = [];
+function ai() {
+  if (!aiOrder.length) aiOrder = shuffle(AI.map((_,i)=>i));
+  const [q, right, wrongs, why] = AI[aiOrder.pop()];
+  frame('Học về AI', `<div class="q" style="font-size:1.5rem">${q}</div>
+    <div class="opts" id="opts" style="grid-template-columns:1fr"></div><div id="msg"></div>`);
+  answerUI(shuffle([right, ...wrongs]), right, () => {
+    $('#msg').innerHTML = '💡 ' + why + '<br><button class="back" onclick="ai()">Câu tiếp ➡</button>';
+  });
+}
+
+showStars();
+home();
+</script>
+</body>
+</html>
