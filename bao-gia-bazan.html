@@ -1,0 +1,368 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Báo Giá Bazan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Be+Vietnam+Pro:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: một cột làm việc, tab Báo giá / Bảng đơn giá, tổng tiền dính cuối trang */
+:root {
+  --bg: #eef0f2;
+  --surface: #ffffff;
+  --fg: #1c2429;
+  --muted: #5d6a73;
+  --line: #d5dade;
+  --accent: #0b5d7a;
+  --accent-fg: #ffffff;
+  --warn-bg: #fff3d6;
+  --warn-fg: #6b4a00;
+  --field: #f6f7f8;
+  --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --font-body: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181c; --surface: #1b2328; --fg: #e8ecee; --muted: #93a1aa; --line: #2e3a41;
+    --accent: #5bb8d8; --accent-fg: #0c1a20; --warn-bg: #3a2f10; --warn-fg: #f1d68a; --field: #141b1f;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181c; --surface: #1b2328; --fg: #e8ecee; --muted: #93a1aa; --line: #2e3a41;
+  --accent: #5bb8d8; --accent-fg: #0c1a20; --warn-bg: #3a2f10; --warn-fg: #f1d68a; --field: #141b1f;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-block: 20px 96px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.wrap { max-width: 880px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+h1 { font-family: var(--font-display); font-size: 30px; line-height: 1.1; margin: 0; letter-spacing: .02em; text-transform: uppercase; }
+h2 { font-family: var(--font-display); font-size: 20px; margin: 0; letter-spacing: .03em; text-transform: uppercase; }
+.sub { color: var(--muted); margin: 2px 0 0; font-size: 13px; }
+header { display: flex; flex-direction: column; gap: 2px; }
+.tabs { display: flex; gap: 4px; border-bottom: 2px solid var(--line); }
+.tab { font: inherit; font-weight: 600; background: none; border: 0; padding: 10px 14px; color: var(--muted); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; min-width: 0; }
+input, select { font: inherit; font-size: 15px; color: var(--fg); background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; width: 100%; min-width: 0; text-transform: none; letter-spacing: 0; font-weight: 400; }
+input[type="number"] { font-variant-numeric: tabular-nums; }
+.btn { font: inherit; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 8px 14px; border-radius: 4px; cursor: pointer; }
+.btn.primary { background: var(--accent); color: var(--accent-fg); border-color: var(--accent); }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.btn.danger { color: #b3261e; }
+.warn { background: var(--warn-bg); color: var(--warn-fg); padding: 10px 12px; border-radius: 4px; font-size: 14px; }
+.line { display: grid; grid-template-columns: minmax(0, 2.4fr) repeat(3, minmax(0, .8fr)) minmax(0, 1.2fr) auto; gap: 8px; align-items: end; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.line:last-child { border-bottom: 0; padding-bottom: 0; }
+.calc { font-variant-numeric: tabular-nums; text-align: right; font-weight: 600; padding: 8px 0; }
+.calc small { display: block; color: var(--muted); font-weight: 400; font-size: 12px; }
+.na { color: var(--muted); }
+.group { display: flex; flex-direction: column; gap: 8px; }
+.group-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.price-row { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, .7fr) minmax(0, 1.3fr) auto; gap: 8px; align-items: center; }
+.hint { font-size: 12px; color: var(--muted); }
+.totals { display: flex; flex-direction: column; gap: 6px; font-variant-numeric: tabular-nums; }
+.trow { display: flex; justify-content: space-between; gap: 12px; }
+.trow.big { font-family: var(--font-display); font-size: 28px; border-top: 2px solid var(--fg); padding-top: 8px; margin-top: 4px; }
+.pct { display: flex; align-items: center; gap: 8px; }
+.pct input { width: 80px; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--surface); border-top: 1px solid var(--line);
+  padding-block: 10px calc(10px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.bar-in { max-width: 880px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.bar-total { font-family: var(--font-display); font-size: 26px; font-variant-numeric: tabular-nums; }
+pre { white-space: pre-wrap; word-break: break-word; background: var(--field); border: 1px solid var(--line); border-radius: 4px; padding: 12px; font-size: 13px; margin: 0; font-family: var(--font-body); }
+@media (max-width: 640px) {
+  .line { grid-template-columns: 1fr 1fr 1fr; }
+  .line > .f-item, .line > .f-calc, .line > .f-del { grid-column: 1 / -1; }
+  .price-row { grid-template-columns: 1fr 1fr; }
+  .price-row > .f-name { grid-column: 1 / -1; }
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Báo giá Bazan</h1>
+    <p class="sub">Pano, chữ nổi, inox. Chọn hạng mục, nhập kích thước, ra tiền.</p>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-quote" aria-selected="true" data-tab="quote">Báo giá</button>
+    <button class="tab" role="tab" id="tab-prices" aria-selected="false" data-tab="prices">Bảng đơn giá</button>
+  </div>
+
+  <section id="view-quote" class="wrap" style="gap:16px">
+    <div class="panel">
+      <div class="grid2">
+        <label for="customer">Khách hàng<input id="customer" type="text" placeholder="Tên khách"></label>
+        <label for="project">Công trình / hạng mục<input id="project" type="text" placeholder="Ví dụ: Bảng hiệu mặt tiền"></label>
+      </div>
+    </div>
+
+    <div id="warn" class="warn" hidden></div>
+
+    <div class="panel">
+      <div class="group-head"><h2>Hạng mục</h2><button class="btn primary small" id="add-line" type="button">+ Thêm dòng</button></div>
+      <div id="lines" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Tổng hợp</h2>
+      <div class="totals">
+        <div class="trow"><span>Cộng hạng mục</span><span id="t-sub">0 đ</span></div>
+        <div class="trow"><span class="pct">Chi phí chung + lợi nhuận <input id="overhead" type="number" min="0" step="0.5" value="0" aria-label="Phần trăm chi phí chung và lợi nhuận"> %</span><span id="t-over">0 đ</span></div>
+        <div class="trow"><span class="pct">VAT <input id="vat" type="number" min="0" step="0.5" value="0" aria-label="Phần trăm VAT"> %</span><span id="t-vat">0 đ</span></div>
+        <div class="trow big"><span>Tổng cộng</span><span id="t-total">0 đ</span></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn primary" id="copy" type="button">Sao chép báo giá</button>
+        <button class="btn" id="reset-quote" type="button">Làm báo giá mới</button>
+        <span id="copy-msg" class="hint" role="status" style="align-self:center"></span>
+      </div>
+      <pre id="preview" aria-label="Nội dung báo giá"></pre>
+    </div>
+  </section>
+
+  <section id="view-prices" class="wrap" style="gap:16px" hidden>
+    <div class="panel">
+      <p class="hint" style="margin:0">Đơn giá đang để trống. Điền giá thật của Bazan vào từng dòng, app tự lưu trên trình duyệt này. Đổi giá lúc nào cũng được.</p>
+      <div id="price-groups" style="display:flex;flex-direction:column;gap:20px"></div>
+      <div><button class="btn" id="reset-prices" type="button">Xóa toàn bộ đơn giá đã nhập</button></div>
+    </div>
+  </section>
+</div>
+
+<div class="bar"><div class="bar-in">
+  <span class="hint">Tổng cộng</span>
+  <span class="bar-total" id="bar-total">0 đ</span>
+</div></div>
+
+<script>
+(function () {
+  var KEY = "bazan-baogia-v1";
+  var UNITS = ["m²", "m", "cái", "bộ", "công", "chuyến"];
+  var uid = function () { return Math.random().toString(36).slice(2, 9); };
+
+  function seed() {
+    var g = function (group, list) { return list.map(function (x) { return { id: uid(), group: group, name: x[0], unit: x[1], price: null }; }); };
+    var prices = [].concat(
+      g("Pano, bảng hiệu", [["Pano bạt hiflex khung sắt", "m²"], ["Hộp đèn bạt", "m²"], ["Hộp đèn mica", "m²"], ["Decal in dán", "m²"]]),
+      g("Chữ nổi", [["Chữ nổi mica", "m²"], ["Chữ nổi inox", "m²"], ["Chữ nổi alu + mica", "m²"], ["Chữ nổi có đèn LED", "m²"]]),
+      g("Inox", [["Tấm inox gương", "m²"], ["Tấm inox xước", "m²"], ["Ống / hộp inox", "m"]]),
+      g("Chi phí khác", [["Đèn LED thanh", "m"], ["Nhân công lắp đặt", "công"], ["Vận chuyển", "chuyến"]])
+    );
+    var first = prices.filter(function (p) { return p.name === "Chữ nổi inox"; })[0];
+    return { prices: prices, lines: [{ id: uid(), itemId: first.id, w: 3, h: 0.6, qty: 1 }], meta: { customer: "", project: "", overhead: 0, vat: 0 } };
+  }
+
+  var S;
+  try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
+  if (!S || !S.prices) S = seed();
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+
+  var nf = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 0 });
+  var nf2 = new Intl.NumberFormat("vi-VN", { maximumFractionDigits: 2 });
+  var money = function (n) { return nf.format(Math.round(n)) + " đ"; };
+  var $ = function (id) { return document.getElementById(id); };
+  var item = function (id) { return S.prices.filter(function (p) { return p.id === id; })[0]; };
+
+  function el(tag, attrs, kids) {
+    var e = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+      if (k === "text") e.textContent = attrs[k]; else if (k === "class") e.className = attrs[k]; else e.setAttribute(k, attrs[k]);
+    });
+    (kids || []).forEach(function (c) { e.appendChild(c); });
+    return e;
+  }
+
+  function lineCalc(l) {
+    var it = item(l.itemId);
+    if (!it) return { qty: 0, total: null, unit: "" };
+    var n = Number(l.qty) || 0, w = Number(l.w) || 0, h = Number(l.h) || 0, q;
+    if (it.unit === "m²") q = w * h * n; else if (it.unit === "m") q = w * n; else q = n;
+    var total = it.price == null || it.price === "" ? null : q * Number(it.price);
+    return { qty: q, total: total, unit: it.unit };
+  }
+
+  function totals() {
+    var sub = 0, missing = 0;
+    S.lines.forEach(function (l) { var c = lineCalc(l); if (c.total == null) { if (item(l.itemId)) missing++; } else sub += c.total; });
+    var over = sub * (Number(S.meta.overhead) || 0) / 100;
+    var vat = (sub + over) * (Number(S.meta.vat) || 0) / 100;
+    return { sub: sub, over: over, vat: vat, total: sub + over + vat, missing: missing };
+  }
+
+  function updateTotals() {
+    var t = totals();
+    $("t-sub").textContent = money(t.sub);
+    $("t-over").textContent = money(t.over);
+    $("t-vat").textContent = money(t.vat);
+    $("t-total").textContent = money(t.total);
+    $("bar-total").textContent = money(t.total);
+    var w = $("warn");
+    if (t.missing) { w.hidden = false; w.textContent = t.missing + " dòng chưa có đơn giá. Vào tab Bảng đơn giá để điền, tổng tiền mới đủ."; } else w.hidden = true;
+    S.lines.forEach(function (l) {
+      var c = lineCalc(l), box = document.querySelector('[data-calc="' + l.id + '"]');
+      if (!box) return;
+      box.replaceChildren(
+        document.createTextNode(c.total == null ? "Chưa có giá" : money(c.total)),
+        el("small", { text: nf2.format(c.qty) + " " + c.unit })
+      );
+      box.className = "calc f-calc" + (c.total == null ? " na" : "");
+    });
+    buildPreview(t);
+  }
+
+  function buildPreview(t) {
+    var out = ["BÁO GIÁ - CÔNG TY CP XÂY DỰNG VÀ QUẢNG CÁO BAZAN"];
+    if (S.meta.customer) out.push("Khách hàng: " + S.meta.customer);
+    if (S.meta.project) out.push("Công trình: " + S.meta.project);
+    out.push("");
+    S.lines.forEach(function (l, i) {
+      var it = item(l.itemId), c = lineCalc(l);
+      if (!it) return;
+      var size = it.unit === "m²" ? " (" + nf2.format(l.w || 0) + " x " + nf2.format(l.h || 0) + " m x " + nf2.format(l.qty || 0) + ")" : "";
+      out.push((i + 1) + ". " + it.name + size + ": " + nf2.format(c.qty) + " " + it.unit + " x " + (it.price == null || it.price === "" ? "(chưa có giá)" : nf.format(it.price)) + " = " + (c.total == null ? "-" : money(c.total)));
+    });
+    out.push("");
+    out.push("Cộng hạng mục: " + money(t.sub));
+    if (Number(S.meta.overhead)) out.push("Chi phí chung + lợi nhuận " + S.meta.overhead + "%: " + money(t.over));
+    if (Number(S.meta.vat)) out.push("VAT " + S.meta.vat + "%: " + money(t.vat));
+    out.push("TỔNG CỘNG: " + money(t.total));
+    $("preview").textContent = out.join("\n");
+  }
+
+  function renderLines() {
+    var box = $("lines");
+    box.replaceChildren();
+    S.lines.forEach(function (l) {
+      var it = item(l.itemId);
+      var sel = el("select", { id: "i-" + l.id, "aria-label": "Hạng mục" });
+      var groups = {};
+      S.prices.forEach(function (p) {
+        if (!groups[p.group]) { groups[p.group] = el("optgroup", { label: p.group }); sel.appendChild(groups[p.group]); }
+        var o = el("option", { value: p.id, text: p.name + " (" + p.unit + ")" });
+        if (p.id === l.itemId) o.selected = true;
+        groups[p.group].appendChild(o);
+      });
+      sel.addEventListener("change", function () { l.itemId = sel.value; save(); renderLines(); });
+
+      function num(field, label, show) {
+        var inp = el("input", { type: "number", min: "0", step: "any", id: field + "-" + l.id, value: l[field] == null ? "" : l[field] });
+        inp.addEventListener("input", function () { l[field] = inp.value === "" ? null : Number(inp.value); save(); updateTotals(); });
+        var lab = el("label", { for: field + "-" + l.id }, [document.createTextNode(label), inp]);
+        if (!show) lab.style.visibility = "hidden";
+        return lab;
+      }
+      var unit = it ? it.unit : "";
+      var del = el("button", { class: "btn small danger", type: "button", "aria-label": "Xóa dòng", text: "Xóa" });
+      del.addEventListener("click", function () { S.lines = S.lines.filter(function (x) { return x.id !== l.id; }); save(); renderLines(); });
+
+      var row = el("div", { class: "line" }, [
+        el("label", { class: "f-item", for: "i-" + l.id }, [document.createTextNode("Hạng mục"), sel]),
+        num("w", unit === "m" ? "Dài (m)" : "Ngang (m)", unit === "m²" || unit === "m"),
+        num("h", "Cao (m)", unit === "m²"),
+        num("qty", "Số lượng", true),
+        el("div", { class: "calc f-calc", "data-calc": l.id }),
+        el("div", { class: "f-del" }, [del])
+      ]);
+      box.appendChild(row);
+    });
+    if (!S.lines.length) box.appendChild(el("p", { class: "hint", text: "Chưa có dòng nào. Bấm “+ Thêm dòng”." }));
+    updateTotals();
+  }
+
+  function renderPrices() {
+    var root = $("price-groups");
+    root.replaceChildren();
+    var order = [];
+    S.prices.forEach(function (p) { if (order.indexOf(p.group) < 0) order.push(p.group); });
+    order.forEach(function (gname) {
+      var add = el("button", { class: "btn small", type: "button", text: "+ Thêm mục" });
+      add.addEventListener("click", function () {
+        var idx = 0; S.prices.forEach(function (p, i) { if (p.group === gname) idx = i; });
+        S.prices.splice(idx + 1, 0, { id: uid(), group: gname, name: "Hạng mục mới", unit: "m²", price: null });
+        save(); renderPrices();
+      });
+      var g = el("div", { class: "group" }, [el("div", { class: "group-head" }, [el("h2", { text: gname }), add])]);
+      S.prices.filter(function (p) { return p.group === gname; }).forEach(function (p) {
+        var name = el("input", { type: "text", value: p.name, "aria-label": "Tên hạng mục" });
+        name.addEventListener("input", function () { p.name = name.value; save(); });
+        name.addEventListener("change", function () { renderLines(); });
+        var unit = el("select", { "aria-label": "Đơn vị" });
+        UNITS.forEach(function (u) { var o = el("option", { value: u, text: u }); if (u === p.unit) o.selected = true; unit.appendChild(o); });
+        unit.addEventListener("change", function () { p.unit = unit.value; save(); renderLines(); });
+        var price = el("input", { type: "number", min: "0", step: "1000", placeholder: "Đơn giá (đ)", value: p.price == null ? "" : p.price, "aria-label": "Đơn giá" });
+        price.addEventListener("input", function () { p.price = price.value === "" ? null : Number(price.value); save(); updateTotals(); });
+        var del = el("button", { class: "btn small danger", type: "button", text: "Xóa", "aria-label": "Xóa hạng mục" });
+        del.addEventListener("click", function () {
+          S.prices = S.prices.filter(function (x) { return x.id !== p.id; });
+          S.lines = S.lines.filter(function (l) { return l.itemId !== p.id; });
+          save(); renderPrices(); renderLines();
+        });
+        g.appendChild(el("div", { class: "price-row" }, [el("div", { class: "f-name" }, [name]), unit, price, del]));
+      });
+      root.appendChild(g);
+    });
+  }
+
+  document.querySelectorAll(".tab").forEach(function (t) {
+    t.addEventListener("click", function () {
+      var which = t.getAttribute("data-tab");
+      document.querySelectorAll(".tab").forEach(function (x) { x.setAttribute("aria-selected", String(x === t)); });
+      $("view-quote").hidden = which !== "quote";
+      $("view-prices").hidden = which !== "prices";
+      if (which === "quote") renderLines();
+    });
+  });
+
+  $("add-line").addEventListener("click", function () {
+    S.lines.push({ id: uid(), itemId: S.prices[0] ? S.prices[0].id : null, w: null, h: null, qty: 1 });
+    save(); renderLines();
+  });
+  ["customer", "project"].forEach(function (k) {
+    $(k).value = S.meta[k] || "";
+    $(k).addEventListener("input", function () { S.meta[k] = $(k).value; save(); updateTotals(); });
+  });
+  ["overhead", "vat"].forEach(function (k) {
+    $(k).value = S.meta[k] || 0;
+    $(k).addEventListener("input", function () { S.meta[k] = Number($(k).value) || 0; save(); updateTotals(); });
+  });
+
+  $("copy").addEventListener("click", function () {
+    var text = $("preview").textContent, msg = $("copy-msg");
+    function fallback() {
+      var r = document.createRange(); r.selectNodeContents($("preview"));
+      var s = window.getSelection(); s.removeAllRanges(); s.addRange(r);
+      msg.textContent = "Đã chọn sẵn nội dung, bấm Ctrl+C (hoặc giữ để sao chép).";
+    }
+    try { navigator.clipboard.writeText(text).then(function () { msg.textContent = "Đã sao chép."; }, fallback); } catch (e) { fallback(); }
+  });
+
+  var pendingReset = null;
+  function confirmBtn(btn, label, action) {
+    btn.addEventListener("click", function () {
+      if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = label; action(); return; }
+      btn.dataset.armed = "1"; btn.textContent = "Bấm lần nữa để xác nhận";
+      setTimeout(function () { if (btn.dataset.armed) { delete btn.dataset.armed; btn.textContent = label; } }, 4000);
+    });
+  }
+  confirmBtn($("reset-quote"), "Làm báo giá mới", function () {
+    S.lines = []; S.meta = { customer: "", project: "", overhead: S.meta.overhead, vat: S.meta.vat };
+    $("customer").value = ""; $("project").value = ""; save(); renderLines();
+  });
+  confirmBtn($("reset-prices"), "Xóa toàn bộ đơn giá đã nhập", function () {
+    S.prices.forEach(function (p) { p.price = null; }); save(); renderPrices(); updateTotals();
+  });
+
+  renderLines();
+  renderPrices();
+})();
+</script>
